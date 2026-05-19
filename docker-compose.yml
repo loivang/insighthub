@@ -1,0 +1,112 @@
+# InsightHub — docker-compose v0
+#
+# ⚠️ ĐÂY LÀ v0 CỐ Ý: chỉ 3 service core (web + api + postgres).
+# - KHÔNG có redis
+# - KHÔNG có ingestion-worker
+# - api xử lý ingestion ĐỒNG BỘ
+#
+# Day 1: học viên refactor — thêm redis + ingestion-worker.
+# Khi đó dùng docker-compose.full.yml (đáp án trong reference-solutions).
+#
+# Chạy v0:                     docker compose up --build
+# Chạy v0 + Ollama on-prem:    docker compose --profile ollama up --build
+# Web:                         http://localhost:3000
+# API:                         http://localhost:8000/docs
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg16
+    environment:
+      POSTGRES_USER: insighthub
+      POSTGRES_PASSWORD: insighthub
+      POSTGRES_DB: insighthub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U insighthub" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql://insighthub:insighthub@postgres:5432/insighthub
+      # ---- LLM ----
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1024}
+      LLM_MODEL: ${LLM_MODEL:-}
+      # Gemini (default)
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3-flash-preview}
+      # Anthropic
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_CHAT_MODEL: ${ANTHROPIC_CHAT_MODEL:-claude-sonnet-4-6}
+      # Ollama
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-deepseek-r1:14b}
+
+      # ---- Embedding ----
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-gemini}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-2}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      VOYAGE_EMBEDDING_MODEL: ${VOYAGE_EMBEDDING_MODEL:-voyage-3.5}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-deepseek-r1:14b}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  # ============================================================
+  # OPTIONAL — Ollama local LLM/Embedding service
+  # ============================================================
+  # Chạy: docker compose --profile ollama up --build
+  # Sau khi container up, pull model:
+  #   docker compose exec ollama ollama pull deepseek-r1:14b
+  #
+  # Lưu ý:
+  #  - deepseek-r1:14b ~ 9GB. Lần đầu pull mất 5-15 phút.
+  #  - RAM yêu cầu ≥ 16GB. Khuyến nghị GPU (NVIDIA + nvidia-container-toolkit).
+  #  - Khi profile 'ollama' active, đặt LLM_PROVIDER=ollama + EMBEDDING_PROVIDER=ollama
+  #    trong .env để api dùng local model thay vì Gemini/Anthropic.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: [ "ollama" ] # chỉ start khi `--profile ollama`
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # GPU support — uncomment nếu có NVIDIA GPU + nvidia-container-toolkit
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  pgdata:
+  ollama-data:

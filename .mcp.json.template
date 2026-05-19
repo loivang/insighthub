@@ -1,0 +1,23 @@
+{
+  "_comment": "TEMPLATE — học viên điền các MCP server trong Day 2.",
+  "_instructions": [
+    "Đây là file cấu hình MCP cho Claude Code / Claude Desktop.",
+    "Day 2: thêm tối thiểu 4 server — filesystem, docker, kubernetes, prometheus.",
+    "Mỗi server config theo doc chính thức tại modelcontextprotocol.io.",
+    "NGUYÊN TẮC BẢO MẬT: credentials để ở biến môi trường, KHÔNG hardcode.",
+    "Với AWS MCP: dùng IAM user read-only (xem pre-class checklist item 3)."
+  ],
+  "_example_structure": {
+    "mcpServers": {
+      "filesystem": {
+        "command": "...",
+        "args": ["...", "đường-dẫn-allow-list"]
+      },
+      "docker": {
+        "command": "...",
+        "args": ["..."]
+      }
+    }
+  },
+  "mcpServers": {}
+}

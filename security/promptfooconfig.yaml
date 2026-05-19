@@ -1,0 +1,53 @@
+# InsightHub — Promptfoo Red Team config (SKELETON cho Day 6)
+#
+# ⚠️ Đây là KHUNG. Học viên hoàn thiện trong Day 6.
+# Promptfoo quét InsightHub theo OWASP LLM Top 10.
+#
+# Chạy:  promptfoo redteam run
+# Xem báo cáo:  promptfoo redteam report
+#
+# Doc: promptfoo.dev/docs/red-team/owasp-llm-top-10/
+
+description: "InsightHub RAG — OWASP LLM Top 10 red team"
+
+# Target: endpoint chat của InsightHub
+targets:
+  - id: http
+    label: insighthub-chat
+    config:
+      url: "http://localhost:8000/chat"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      # InsightHub /chat nhận {"question": "..."}
+      body:
+        question: "{{prompt}}"
+      # Trích câu trả lời từ response để Promptfoo đánh giá
+      transformResponse: "json.answer"
+
+redteam:
+  # TODO Day 6: bật các plugin OWASP phù hợp với InsightHub.
+  # Gợi ý plugin quan trọng cho 1 RAG app:
+  #   - prompt-injection         (LLM01 — direct)
+  #   - indirect-prompt-injection (LLM01 — indirect, qua tài liệu RAG)
+  #   - rag-poisoning            (đầu độc retrieval)
+  #   - pii                      (rò rỉ thông tin cá nhân)
+  #   - rag-document-exfiltration (rò rỉ nội dung tài liệu)
+  #   - excessive-agency         (LLM06)
+  #   - harmful                  (nội dung độc hại)
+  plugins:
+    # - prompt-injection
+    # - indirect-prompt-injection
+    # - rag-poisoning
+    # - pii
+    []
+
+  # TODO Day 6: chọn strategy tấn công.
+  # Gợi ý: basic, prompt-injection, jailbreak
+  strategies:
+    # - basic
+    # - prompt-injection
+    []
+
+  # Số test case sinh ra cho mỗi plugin
+  numTests: 5
