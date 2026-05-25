@@ -1,27 +1,27 @@
 """
 InsightHub API — Documents router
-Upload tài liệu và xem trạng thái.
 
-⚠️  Day 1 refactor: endpoint upload hiện gọi ingest ĐỒNG BỘ.
-Sau refactor sẽ: lưu metadata → enqueue ARQ job → trả về 202 ngay.
+Upload pipeline (Day 1, async): persist metadata → enqueue ARQ job → return 202.
+Worker (ingestion-worker) consumes the queue and runs the existing
+`ingest_document_sync` from `app.services.ingestion`.
 """
 import logging
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 
 from app.core.db import get_conn
-from app.core.metrics import documents_total, ingestion_errors_total
-from app.services.ingestion import ingest_document_sync
+from app.core.metrics import documents_total
 
 logger = logging.getLogger("insighthub.routers.documents")
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 ALLOWED_EXT = (".txt", ".md", ".pdf")
 MAX_SIZE_MB = 10
+INGESTION_QUEUE = "arq:queue:ingestion"
 
 
-@router.post("", status_code=201)
-async def upload_document(file: UploadFile):
+@router.post("", status_code=202)
+async def upload_document(request: Request, file: UploadFile):
     if not file.filename or not file.filename.lower().endswith(ALLOWED_EXT):
         raise HTTPException(400, f"Chỉ chấp nhận: {', '.join(ALLOWED_EXT)}")
 
@@ -29,7 +29,8 @@ async def upload_document(file: UploadFile):
     if len(content) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(413, f"File vượt quá {MAX_SIZE_MB}MB")
 
-    # Lưu metadata, trạng thái 'pending'
+    # DB CHECK constraint allows only ('pending','ready','failed'); 'pending' is
+    # the on-disk representation of the public 'queued' state.
     with get_conn() as conn:
         row = conn.execute(
             "INSERT INTO documents (filename, status) VALUES (%s, 'pending') RETURNING id",
@@ -37,20 +38,15 @@ async def upload_document(file: UploadFile):
         ).fetchone()
         document_id = row[0]
 
-    # ⚠️  ĐIỂM YẾU v0: ingest đồng bộ — request bị block tới khi xong.
-    # Day 1: thay bằng redis.enqueue_job("ingest", document_id, filename, content)
-    try:
-        chunk_count = ingest_document_sync(document_id, file.filename, content)
-    except Exception as exc:  # noqa: BLE001
-        ingestion_errors_total.inc()
-        raise HTTPException(500, f"Ingestion thất bại: {exc}") from exc
+    await request.app.state.arq_pool.enqueue_job(
+        "ingest_document",
+        document_id,
+        file.filename,
+        content,
+        _queue_name=INGESTION_QUEUE,
+    )
 
-    return {
-        "id": document_id,
-        "filename": file.filename,
-        "status": "ready",
-        "chunk_count": chunk_count,
-    }
+    return {"document_id": document_id, "status": "queued"}
 
 
 @router.get("")
