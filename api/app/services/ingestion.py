@@ -58,9 +58,6 @@ def process_document(document_id: int, filename: str, content: bytes) -> int:
 
     with get_conn() as conn:
         with conn.transaction():
-            # Idempotency: clear stale chunks from a previous failed attempt.
-            # ARQ retries this task up to 3× — without this, duplicates accumulate.
-            conn.execute("DELETE FROM chunks WHERE document_id = %s", (document_id,))
             for chunk, vector in zip(chunks, vectors):
                 conn.execute(
                     """
