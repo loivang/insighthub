@@ -16,6 +16,11 @@ async def liveness():
     return {"status": "ok"}
 
 
+@router.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.get("/readyz")
 async def readiness():
     db_ok = healthcheck()
