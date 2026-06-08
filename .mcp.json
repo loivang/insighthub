@@ -1,4 +1,11 @@
 {
+  "_instructions": [
+    "Repo path da duoc set cho may WSL cua ban: /home/loivang/projects/insighthub.",
+    "Kubernetes MCP dung kubeconfig read-only: /home/loivang/.kube/mcp-viewer.kubeconfig.",
+    "PROMETHEUS_URL hien tro localhost:9090; doi sang URL/port-forward Prometheus cluster sau khi deploy Day 3/4.",
+    "AWS MCP servers dung profile mcp-readonly; credentials nam trong ~/.aws/config va ~/.aws/credentials, khong commit secret.",
+    "Terraform/AWS MCP phuc vu Day 3+; can docker va uvx hoat dong tren may local."
+  ],
   "mcpServers": {
     "filesystem": {
       "command": "npx",
@@ -6,16 +13,18 @@
         "-y",
         "@modelcontextprotocol/server-filesystem@2026.1.14",
         "/home/loivang/projects/insighthub"
-      ]
+      ],
+      "env": {}
     },
     "docker": {
       "command": "npx",
       "args": [
         "-y",
         "@edjl/docker-mcp@1.0.7"
-      ]
+      ],
+      "env": {}
     },
-    "kubernetes": {
+    "kubernetes-mcp-server": {
       "command": "npx",
       "args": [
         "-y",
@@ -36,6 +45,95 @@
       ],
       "env": {
         "PROMETHEUS_URL": "http://localhost:9090"
+      }
+    },
+    "terraform": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server"
+      ],
+      "env": {}
+    },
+    "aws-api": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-api-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "aws-iac": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-iac-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "aws-docs": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server"
+      ],
+      "env": {}
+    },
+    "aws-support": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-support-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "aws-pricing": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-pricing-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "bedrock-kb": {
+      "command": "uvx",
+      "args": [
+        "awslabs.bedrock-kb-retrieval-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "aws-dataprocessing": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-dataprocessing-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "aurora-dsql": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aurora-dsql-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
+      }
+    },
+    "valkey": {
+      "command": "uvx",
+      "args": [
+        "awslabs.valkey-mcp-server"
+      ],
+      "env": {
+        "AWS_PROFILE": "mcp-readonly"
       }
     }
   }
