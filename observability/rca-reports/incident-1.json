@@ -1,0 +1,28 @@
+{
+  "incident_id": "incident-1",
+  "title": "API readiness failed when Postgres was stopped",
+  "environment": "local minikube",
+  "service": "api",
+  "started_at": "2026-06-09T00:00:00+07:00",
+  "summary": "Postgres was scaled down to 0 replicas. The API could not connect to the database, so /readyz returned HTTP 503.",
+  "injection": "kubectl -n insighthub-loivang scale deployment postgres --replicas=0",
+  "signals": [
+    {
+      "metric": "insighthub_http_requests_total{endpoint=\"/readyz\",status=\"503\"}",
+      "timestamp": "2026-06-09T00:00:00+07:00",
+      "evidence": "The metric increased after repeated /readyz checks while Postgres had 0 replicas."
+    },
+    {
+      "metric": "sum(rate(insighthub_http_requests_total{status=~\"5..\"}[5m]))",
+      "timestamp": "2026-06-09T00:00:00+07:00",
+      "evidence": "The 5xx rate became non-zero during the database outage window."
+    }
+  ],
+  "root_cause": "The API readiness check depends on Postgres. When Postgres was unavailable, the API correctly reported not ready.",
+  "fix": "Scale Postgres back to 1 replica and wait for /readyz to return HTTP 200.",
+  "follow_up_actions": [
+    "Alert when /readyz returns 5xx.",
+    "Check database pod readiness before debugging the API.",
+    "Keep database dependency failures visible on the Grafana dashboard."
+  ]
+}

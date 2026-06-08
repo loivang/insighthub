@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: insighthub-anomaly-rules
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: insighthub-anomaly.rules
+      rules:
+        - record: insighthub_api_request_latency_seconds_current
+          expr: sum(rate(insighthub_http_request_duration_seconds_sum[5m])) / clamp_min(sum(rate(insighthub_http_request_duration_seconds_count[5m])), 1)
+
+        - alert: InsightHubAPILatencyAnomaly
+          expr: insighthub_api_request_latency_seconds_current > 2
+          for: 5m
+          labels:
+            severity: warning
+            service: api
+          annotations:
+            summary: "InsightHub API latency anomaly detected"
+            description: "Average API request latency is above 2 seconds for more than 5 minutes."
+
+        - record: insighthub_error_rate_5m
+          expr: sum(rate(insighthub_http_requests_total{status=~"5.."}[5m]))
+
+        - alert: InsightHubErrorBurst
+          expr: insighthub_error_rate_5m > 0
+          for: 5m
+          labels:
+            severity: warning
+            service: api
+          annotations:
+            summary: "InsightHub API error burst detected"
+            description: "5xx error rate is above zero for more than 5 minutes."
+
+        - record: insighthub_ingestion_backlog
+          expr: sum(insighthub_documents_total{status=~"pending|queued|processing"})
+
+        - alert: InsightHubIngestionBacklog
+          expr: insighthub_ingestion_backlog > 3
+          for: 5m
+          labels:
+            severity: warning
+            service: ingestion-worker
+          annotations:
+            summary: "InsightHub ingestion backlog detected"
+            description: "Pending/queued documents are above 3 for more than 5 minutes."

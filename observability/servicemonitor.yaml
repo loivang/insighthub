@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: insighthub-service-monitor
+  namespace: insighthub-loivang
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: insighthub
+  namespaceSelector:
+    matchNames:
+      - insighthub-loivang
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      honorLabels: true
