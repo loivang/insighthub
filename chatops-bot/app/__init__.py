@@ -1,0 +1,1 @@
+"""InsightHub ChatOps bot package."""
