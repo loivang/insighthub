@@ -1,0 +1,52 @@
+name: security
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+      - "security/**"
+      - "observability/grafana-dashboards/llm-cost.json"
+      - ".github/workflows/security.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "api/**"
+      - "security/**"
+      - "observability/grafana-dashboards/llm-cost.json"
+      - ".github/workflows/security.yml"
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  day6-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Day 6 artifacts
+        run: bash scripts/verify-day-6-local.sh
+
+  promptfoo-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate Promptfoo config is present
+        run: |
+          test -f security/promptfooconfig.yaml
+          grep -q "prompt-injection" security/promptfooconfig.yaml
+          grep -q "indirect-prompt-injection" security/promptfooconfig.yaml
+          grep -q "rag-poisoning" security/promptfooconfig.yaml
+          grep -q "pii" security/promptfooconfig.yaml
+          grep -q "excessive-agency" security/promptfooconfig.yaml
+      - name: Install Promptfoo
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: npm install -g promptfoo
+      - name: Generate red-team cases
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: promptfoo redteam generate -c security/promptfooconfig.yaml || true

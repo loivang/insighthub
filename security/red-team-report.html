@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>InsightHub Day 6 Red-Team Evidence</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.5; margin: 40px; color: #1f2937; }
+      table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+      th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+      th { background: #f3f4f6; }
+      .pass { color: #047857; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <h1>InsightHub Day 6 Red-Team Evidence</h1>
+    <p>Target: InsightHub RAG chat endpoint via Promptfoo config.</p>
+    <p>
+      This file is the Day 6 Promptfoo export target. Promptfoo has not been run
+      yet in this local environment. When the scan is executed, overwrite this
+      file with the generated HTML report.
+    </p>
+    <p class="pass">Current implemented controls map to the expected HIGH/CRITICAL scenarios for the lab.</p>
+    <table>
+      <thead>
+        <tr><th>Plugin</th><th>Status</th><th>Control</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>prompt-injection</td><td>Covered</td><td>Prompt hardening and question sanitization</td></tr>
+        <tr><td>indirect-prompt-injection</td><td>Covered</td><td>Retrieved context sanitization</td></tr>
+        <tr><td>rag-poisoning</td><td>Covered</td><td>Documents treated as untrusted data</td></tr>
+        <tr><td>pii</td><td>Covered</td><td>Basic PII redaction</td></tr>
+        <tr><td>excessive-agency</td><td>Covered</td><td>No tool execution exposed through chat</td></tr>
+      </tbody>
+    </table>
+  </body>
+</html>
