@@ -1,0 +1,20 @@
+[
+  {
+    "key_alias": "insighthub-api",
+    "models": ["insighthub-chat"],
+    "max_budget": 3,
+    "budget_duration": "30d"
+  },
+  {
+    "key_alias": "chatops-bot",
+    "models": ["insighthub-chat"],
+    "max_budget": 1,
+    "budget_duration": "30d"
+  },
+  {
+    "key_alias": "developer",
+    "models": ["insighthub-chat", "insighthub-claude", "insighthub-openai"],
+    "max_budget": 1,
+    "budget_duration": "30d"
+  }
+]

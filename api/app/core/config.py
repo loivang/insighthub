@@ -3,7 +3,7 @@ InsightHub API — Configuration
 Provider-agnostic: chuyển embedding/LLM provider qua env var, không sửa code.
 
 Hỗ trợ:
-  LLM:        gemini (default) | anthropic | bedrock | ollama
+  LLM:        gemini (default) | anthropic | bedrock | ollama | litellm
   Embedding:  gemini (default) | voyage | openai | ollama | local
 
 Mặc định Gemini vì free tier hào phóng + chất lượng tốt cho RAG.
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # --- Redis (job queue) ---
     redis_url: str = "redis://redis:6379"
 
-    # --- LLM provider: gemini (default) | anthropic | bedrock | ollama ---
+    # --- LLM provider: gemini (default) | anthropic | bedrock | ollama | litellm ---
     llm_provider: str = "gemini"
 
     # Gemini (Google AI Studio) — https://ai.google.dev/
@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # Ollama (local) — chạy cùng cluster, không cần API key
     ollama_base_url: str = "http://ollama:11434"
     ollama_chat_model: str = "deepseek-r1:14b"
+
+    # LiteLLM Gateway — OpenAI-compatible proxy with virtual keys and budgets
+    litellm_base_url: str = "http://litellm:4000"
+    litellm_api_key: str = ""
+    litellm_chat_model: str = "insighthub-chat"
 
     # Generic LLM params (apply mọi provider)
     llm_model: str = ""           # nếu trống → dùng <provider>_chat_model
@@ -95,6 +100,8 @@ class Settings(BaseSettings):
             return self.anthropic_chat_model
         if provider == "ollama":
             return self.ollama_chat_model
+        if provider == "litellm":
+            return self.litellm_chat_model
         return self.anthropic_chat_model  # safe default
 
     @property

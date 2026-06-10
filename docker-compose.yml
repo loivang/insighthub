@@ -52,6 +52,10 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1024}
       LLM_MODEL: ${LLM_MODEL:-}
+      # LiteLLM Gateway
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+      LITELLM_CHAT_MODEL: ${LITELLM_CHAT_MODEL:-insighthub-chat}
       # Gemini (default)
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3-flash-preview}
@@ -114,6 +118,44 @@ services:
     depends_on:
       - api
 
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    profiles: [ "day6" ]
+    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-insighthub-master-local}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://litellm:litellm@litellm-db:5432/litellm}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./security/litellm-config.yaml:/app/config.yaml:ro
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "python -c 'import os, urllib.request; req=urllib.request.Request(\"http://localhost:4000/health\", headers={\"Authorization\":\"Bearer \"+os.environ.get(\"LITELLM_MASTER_KEY\", \"sk-insighthub-master-local\")}); urllib.request.urlopen(req, timeout=3)'" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  litellm-db:
+    image: postgres:16-alpine
+    profiles: [ "day6" ]
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+      POSTGRES_DB: litellm
+    volumes:
+      - litellm-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U litellm -d litellm" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ============================================================
   # OPTIONAL — Ollama local LLM/Embedding service
   # ============================================================
@@ -151,3 +193,4 @@ volumes:
   pgdata:
   redisdata:
   ollama-data:
+  litellm-db-data:
